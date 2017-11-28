@@ -49,5 +49,8 @@ CHIP ALU {
     Add16(a=X2, b=Y2, out=SUM);
     And16(a=X2, b=Y2, out=AND);
     Mux16(a=AND, b=SUM, sel=f, out=OPER);
-    Xor16(a=OPER, b=no, out=END);
+    Xor16(a=OPER, b=no, out=out, out=END, out[15]=MSB);
+    Or16Way(in=END, out=zero);        
+    Not(in=zero, out=zr);
+    Or(a=MSB, b=false, out=ng);
 }
