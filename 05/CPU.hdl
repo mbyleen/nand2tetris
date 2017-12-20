@@ -39,19 +39,24 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    Mux16(a=instruction, b=ALUoutput, sel=instruction[0], out=insOrData, out[12]=writeM);
-    ARegister(in=insOrData, load=instruction[10], out=Areg, out[1..15]=addressM);
-    Mux16(a=Areg, b=inM, sel=instruction[3], out=Y);
-    DRegister(in=ALUoutput, load=instruction[11], out=X);
-    ALU(x=X, y=Y, zx=instruction[4], nx=instruction[5], zy=instruction[6], ny=instruction[7], f=instruction[8], no=instruction[9], out=ALUoutput, out=outM, zr=ZR, ng=NG);
+    Not16(in=instruction, out=notINST);
+    And16(a=instruction, b=notINST, out=zeroes);
+    Mux16(a=zeroes, b=instruction, sel=instruction[15], out[12]=A, out[11]=C1, out[10]=C2, out[9]=C3, out[8]=C4, out[7]=C5, out[6]=C6, out[5]=D1, out[4]=D2, out[3]=writeM, out[2]=J1, out[1]=J2, out[0]=J3);
+    Nand(a=instruction[15], b=D1, out=destination1);
+
+    Mux16(a=instruction, b=ALUoutput, sel=instruction[15], out=data);
+    ARegister(in=data, load=destination1, out=Areg, out[0..14]=addressM, out=addressToPC);
+    Mux16(a=Areg, b=inM, sel=A, out=Y);
+    DRegister(in=ALUoutput, load=D2, out=X);
+    ALU(x=X, y=Y, zx=C1, nx=C2, zy=C3, ny=C4, f=C5, no=C6, out=ALUoutput, out=outM, zr=ZR, ng=NG);
 
     Not(in=NG, out=notNG);
-    And(a=NG, b=instruction[13], out=ngj1);
-    And(a=ZR, b=instruction[14], out=zrj2);
-    And(a=notNG, b=instruction[15], out=notNGj3);
-    And(a=ngj1, b=zrj2, out=combo);
-    And(a=combo, b=notNGj3, out=LOAD);
-    Not(in=LOAD, out=INC);
+    Xor(a=NG, b=J1, out=cond1);
+    Xor(a=ZR, b=J2, out=cond2);
+    Xor(a=notNG, b=J3, out=cond3);
+    Or(a=cond1, b=cond2, out=interm);
+    Or(a=interm, b=cond3, out=INC);
+    Not(in=INC, out=LOAD);
 
     PC(in=Areg, load=LOAD, inc=INC, reset=reset, out[1..15]=pc);
 }
