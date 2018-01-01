@@ -20,7 +20,7 @@
  * they are affected instantaneously by the execution of the current 
  * instruction. The addressM and pc outputs are clocked: although they 
  * are affected by the execution of the current instruction, they commit 
- * to their new values only in the next time step. If reset==1 then the 
+ * to their new values only in the next time step. If reset==1 then the
  * CPU jumps to address 0 (i.e. pc is set to 0 in next time step) rather 
  * than to the address resulting from executing the current instruction. 
  */
@@ -39,24 +39,62 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    Not16(in=instruction, out=notINST);
-    And16(a=instruction, b=notINST, out=zeroes);
-    Mux16(a=zeroes, b=instruction, sel=instruction[15], out[12]=A, out[11]=C1, out[10]=C2, out[9]=C3, out[8]=C4, out[7]=C5, out[6]=C6, out[5]=D1, out[4]=D2, out[3]=writeM, out[2]=J1, out[1]=J2, out[0]=J3);
-    Nand(a=instruction[15], b=D1, out=destination1);
+        // get type of instruction
+    //Not(in=instruction[15], out=Ainstruction);
+    //Not(in=Ainstruction, out=Cinstruction);
+    
+    //And(a=Cinstruction, b=instruction[5], out=ALUtoA);    // C-inst and dest to A-reg?
+    //Mux16(a=instruction, b=ALUout, sel=ALUtoA, out=Aregin);
+    
+    //Or(a=Ainstruction, b=ALUtoA, out=loadA);    // load A if A-inst or C-inst&dest to A-reg
+    //ARegister(in=Aregin, load=loadA, out=Aout);
+    
+    //Mux16(a=Aout, b=inM, sel=instruction[12], out=AMout);   // select A or M based on a-bit
 
-    Mux16(a=instruction, b=ALUoutput, sel=instruction[15], out=data);
-    ARegister(in=data, load=destination1, out=Areg, out[0..14]=addressM, out=addressToPC);
-    Mux16(a=Areg, b=inM, sel=A, out=Y);
-    DRegister(in=ALUoutput, load=D2, out=X);
-    ALU(x=X, y=Y, zx=C1, nx=C2, zy=C3, ny=C4, f=C5, no=C6, out=ALUoutput, out=outM, zr=ZR, ng=NG);
+    //And(a=Cinstruction, b=instruction[4], out=loadD);
+    //DRegister(in=ALUout, load=loadD, out=Dout);    // load the D register from ALU
+    
+    //ALU(x=Dout, y=AMout, zx=instruction[11], nx=instruction[10], 
+        //zy=instruction[9], ny=instruction[8], f=instruction[7],
+        //no=instruction[6], out=ALUout, zr=ZRout, ng=NGout); // calculate
+        
+    // Set outputs for writing memory
+    //Or16(a=false, b=Aout, out[0..14]=addressM);
+    //Or16(a=false, b=ALUout, out=outM);
+//And(a=Cinstruction, b=instruction[3], out=writeM);
 
+
+
+
+    // Find instruction type
+    Not(in=instruction[15], out=Ainst);
+    Not(in=Ainst, out=Cinst);
+
+    // Select from instruction input or ALU output
+    And(a=Cinst, b=instruction[5], out=ALUoutToA);      // Is both a C instruction and has control bit load A register set 1
+    Mux16(a=instruction, b=ALUoutput, sel=ALUoutToA, out=data);
+
+    // Load A register
+    Or(a=Ainst, b=ALUoutToA, out=LoadAreg);
+    ARegister(in=data, load=LoadAreg, out=Areg, out[0..14]=addressM, out=addressToPC);
+
+    And(a=Cinst, b=instruction[3], out=writeM);     // Control write to memory
+
+    Mux16(a=Areg, b=inM, sel=instruction[12], out=Y);       // Select write to Aregister or memeroy based on control bit A
+    DRegister(in=ALUoutput, load=instruction[4], out=X);
+
+    ALU(x=X, y=Y, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=ALUoutput, out=outM, zr=ZR, ng=NG);
+
+    // Set program counter load and increment bits from ALU output
+    // Match ALU output to control bits J1, J2, J3 to determine if a jump condition is met
     Not(in=NG, out=notNG);
-    Xor(a=NG, b=J1, out=cond1);
-    Xor(a=ZR, b=J2, out=cond2);
-    Xor(a=notNG, b=J3, out=cond3);
+    Xor(a=NG, b=instruction[2], out=cond1);
+    Xor(a=ZR, b=instruction[1], out=cond2);
+    Xor(a=notNG, b=instruction[0], out=cond3);
     Or(a=cond1, b=cond2, out=interm);
     Or(a=interm, b=cond3, out=INC);
-    Not(in=INC, out=LOAD);
 
+    // If not loading, increment
+    Not(in=INC, out=LOAD);
     PC(in=Areg, load=LOAD, inc=INC, reset=reset, out[0..14]=pc);
 }
