@@ -58,5 +58,5 @@ CHIP CPU {
     Or(a=interm, b=cond3, out=INC);
     Not(in=INC, out=LOAD);
 
-    PC(in=Areg, load=LOAD, inc=INC, reset=reset, out[1..15]=pc);
+    PC(in=Areg, load=LOAD, inc=INC, reset=reset, out[0..14]=pc);
 }
