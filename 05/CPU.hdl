@@ -55,20 +55,23 @@ CHIP CPU {
     And(a=Cinst, b=instruction[3], out=writeM);     // Control write to memory
 
     Mux16(a=Areg, b=inM, sel=instruction[12], out=Y);       // Select write to Aregister or memory based on control bit A
-    DRegister(in=ALUoutput, load=instruction[4], out=X);
+    And(a=Cinst, b=instruction[4], out=LoadBreg);
+    DRegister(in=ALUoutput, load=LoadBreg, out=X);
 
     ALU(x=X, y=Y, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=ALUoutput, out=outM, zr=ZR, ng=NG);
 
     // Set program counter load and increment bits from ALU output
-    // Match ALU output to control bits J1, J2, J3 to determine if a jump condition is met
+    // If any J control bit has a true ALU output match, then jump
     Not(in=NG, out=notNG);
-    Xor(a=NG, b=instruction[2], out=cond1);
-    Xor(a=ZR, b=instruction[1], out=cond2);
-    Xor(a=notNG, b=instruction[0], out=cond3);
+    And(a=NG, b=instruction[2], out=cond1);
+    And(a=ZR, b=instruction[1], out=cond2);
+    And(a=notNG, b=instruction[0], out=cond3);
     Or(a=cond1, b=cond2, out=interm);
-    Or(a=interm, b=cond3, out=INC);
+    Or(a=interm, b=cond3, out=load);
+
+    And(a=Cinst, b=load, out=LOAD); // Only load if the instruction is C type
 
     // If not loading, increment
-    Not(in=INC, out=LOAD);
+    Not(in=LOAD, out=INC);
     PC(in=Areg, load=LOAD, inc=INC, reset=reset, out[0..14]=pc);
 }
