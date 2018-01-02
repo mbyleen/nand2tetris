@@ -63,9 +63,11 @@ CHIP CPU {
     // Set program counter load and increment bits from ALU output
     // If any J control bit has a true ALU output match, then jump
     Not(in=NG, out=notNG);
+    Not(in=ZR, out=notZR);
     And(a=NG, b=instruction[2], out=cond1);
     And(a=ZR, b=instruction[1], out=cond2);
-    And(a=notNG, b=instruction[0], out=cond3);
+    And(a=notNG, b=notZR, out=pos);
+    And(a=pos, b=instruction[0], out=cond3);
     Or(a=cond1, b=cond2, out=interm);
     Or(a=interm, b=cond3, out=load);
 
