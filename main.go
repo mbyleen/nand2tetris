@@ -1,0 +1,26 @@
+package main
+
+import (
+	"fmt"
+	"github.com/urfave/cli"
+	"os"
+)
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "ghcc"
+	app.Usage = "Cross-compile HACK assembly language to machine code readable by the HACK computer"
+	app.Action = func(c *cli.Context) error {
+		filename := c.Args().Get(0)
+		input, err := read(filename)
+		if err != nil {
+			return err
+		}
+		fmt.Println(input)
+		//output := parse(input)
+		//fmt.Println(output)
+		return nil
+	}
+
+	app.Run(os.Args)
+}
