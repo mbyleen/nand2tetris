@@ -42,7 +42,7 @@ func getDest(input string) string {
 		"MD":   "011",
 		"A":    "100",
 		"AM":   "101",
-		"Ad":   "110",
+		"AD":   "110",
 		"AMD":  "111",
 	}
 	return m[input]
