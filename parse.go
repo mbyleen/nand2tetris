@@ -10,6 +10,8 @@ func parse(input []string) ([]string, error) {
 	var binary []string
 	for _, line := range input {
 		var b string
+		line = removeComments(line)
+		line = removeWhitespace(line)
 		// identify A instructions
 		if strings.HasPrefix(line, "@") {
 			b = parseAInstruction(line)
@@ -67,4 +69,16 @@ func parseCInstruction(s string) string {
 	}
 
 	return ins + comp + dest + jump
+}
+
+func removeComments(s string) string {
+	ind := strings.Index(s, "//")
+	if ind != -1 {
+		s = s[:ind]
+	}
+	return s
+}
+
+func removeWhitespace(s string) string {
+	return strings.TrimSpace(s)
 }
