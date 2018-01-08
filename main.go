@@ -14,11 +14,18 @@ func main() {
 		filename := c.Args().Get(0)
 		input, err := read(filename)
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
-		fmt.Println(input)
-		//output := parse(input)
-		//fmt.Println(output)
+		output, err := parse(input)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		if err := write(output, filename); err != nil {
+			fmt.Println(err)
+			return err
+		}
 		return nil
 	}
 
