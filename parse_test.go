@@ -8,8 +8,8 @@ import (
 func TestAinstructionNumbers(t *testing.T) {
 	// What is the number of greatest magnitude expected?
 	//negative numbers are not legal--can expect a valid input for this exercise
-	testCases := []string{"@84", "@0", "@notNumber", "notAType"}
-	expected := []string{"000000001010100", "000000000000000"}
+	testCases := []string{"@84", "@0", "@16384", "@notNumber", "notAType"}
+	expected := []string{"0000000001010100", "0000000000000000", "0100000000000000"}
 
 	testParse(t, testCases, expected)
 }

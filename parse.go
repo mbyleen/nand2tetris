@@ -12,6 +12,9 @@ func parse(input []string) ([]string, error) {
 		var b string
 		line = removeComments(line)
 		line = removeWhitespace(line)
+		if line == "" {
+			continue
+		}
 		// identify A instructions
 		if strings.HasPrefix(line, "@") {
 			b = parseAInstruction(line)
@@ -34,12 +37,12 @@ func parseAInstruction(s string) string {
 	//strip the @ prefix
 	s = s[1:]
 	//see if the remainder will parse as a number
-	n, err := strconv.ParseInt(s, 0, 15)
+	n, err := strconv.ParseInt(s, 0, 16)
 	if err != nil {
 		return ""
 	}
 	//convert the number to binary
-	return fmt.Sprintf("%015b", n)
+	return "0" + fmt.Sprintf("%015b", n)
 }
 
 // Parse C instruction using lookup tables
