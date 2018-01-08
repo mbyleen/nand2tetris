@@ -8,7 +8,7 @@ import (
 func TestRead(t *testing.T) {
 
 	// create a short test file
-	filepath := "/tmp/test1"
+	filepath := "/tmp/test1.asm"
 	text := []byte("line 1\nline2\nline3")
 	err := ioutil.WriteFile(filepath, text, 0644)
 	if err != nil {
