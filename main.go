@@ -6,10 +6,10 @@ import (
 	"os"
 )
 
-func main() {
+func Main() {
 	app := cli.NewApp()
-	app.Name = "ghcc"
-	app.Usage = "Cross-compile HACK assembly language to machine code readable by the HACK computer"
+	app.Name = "gha"
+	app.Usage = "Assemble HACK assembly language to machine code readable by the HACK computer"
 	app.Action = func(c *cli.Context) error {
 		filename := c.Args().Get(0)
 		input, err := read(filename)
