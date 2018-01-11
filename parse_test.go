@@ -5,10 +5,25 @@ import (
 	"testing"
 )
 
+func TestParseSymbolInOrder(t *testing.T) {
+	testCase := []string{"(symbol)", "@symbol"}
+	expected := []string{"0000000000000000"}
+
+	testParse(t, testCase, expected)
+}
+
+func TestParseSymbolReverseOrder(t *testing.T) {
+	testCase := []string{"@symbol", "(symbol)", "@8"}
+	expected := []string{"0000000000000001", "0000000000001000"}
+
+	testParse(t, testCase, expected)
+
+}
+
 func TestAinstructionNumbers(t *testing.T) {
 	// What is the number of greatest magnitude expected?
 	//negative numbers are not legal--can expect a valid input for this exercise
-	testCases := []string{"@84", "@0", "@16384", "@notNumber", "notAType"}
+	testCases := []string{"(notNumber)", "@84", "@0", "@16384", "@notNumber"}
 	expected := []string{"0000000001010100", "0000000000000000", "0100000000000000"}
 
 	testParse(t, testCases, expected)
@@ -42,5 +57,15 @@ func testParse(t *testing.T, testCases []string, expected []string) {
 		if strings.Compare(expected[i], output[i]) != 0 {
 			t.Error("Match failed:", output[i], expected[i])
 		}
+	}
+	clearMaps()
+}
+
+func clearMaps() {
+	for k := range symb {
+		delete(symb, k)
+	}
+	for k := range extra {
+		delete(extra, k)
 	}
 }

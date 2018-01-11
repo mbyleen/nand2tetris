@@ -6,43 +6,98 @@ import (
 	"strings"
 )
 
+var symb = make(map[string]string)
+var extra = make(map[string]int)
+
 func parse(input []string) ([]string, error) {
 	var binary []string
 	for _, line := range input {
-		var b string
 		line = removeComments(line)
 		line = removeWhitespace(line)
 		if line == "" {
 			continue
 		}
-		// identify A instructions
-		if strings.HasPrefix(line, "@") {
-			b = parseAInstruction(line)
-		} else {
-			// Non-A instructions are C instructions
-			b = parseCInstruction(line)
+		// identify symbols to catalog
+		if strings.HasPrefix(line, "(") && strings.HasSuffix(line, ")") {
+			catalog(line, len(binary))
+			continue
 		}
-		// remove this empty string check when working with symbols
-		if b != "" {
-			binary = append(binary, b)
+		b := parseLine(line, len(binary))
+		binary = append(binary, b)
+	}
+	for key := range extra {
+		index := extra[key]
+		val := symb[key]
+		v, err := numToBinary(val)
+		if err != nil {
+			// how to handle this? can assume well-formed input for exercise
 		}
+		binary[index] = v
 	}
 	return binary, nil
 }
 
+func parseLine(line string, i int) string {
+	var b string
+	// identify A instructions
+	if strings.HasPrefix(line, "@") {
+		b = parseAInstruction(line, i)
+	} else {
+		// Non-A instructions are C instructions
+		b = parseCInstruction(line)
+	}
+	return b
+}
+
+func removeComments(s string) string {
+	ind := strings.Index(s, "//")
+	if ind != -1 {
+		s = s[:ind]
+	}
+	return s
+}
+
+func removeWhitespace(s string) string {
+	return strings.TrimSpace(s)
+}
+
+// Store symbol values
+func catalog(line string, i int) {
+	// strip parentheses
+	symbol := line[1 : len(line)-1]
+	// Address referred to by (symbol) is that of next line
+	symb[symbol] = strconv.Itoa(i)
+}
+
 // Parse an A instruction
-// currently returns an empty string for non-numerical instructions
-// will need to change this when work with symbols later
-func parseAInstruction(s string) string {
+func parseAInstruction(s string, i int) string {
 	//strip the @ prefix
 	s = s[1:]
-	//see if the remainder will parse as a number
+	// Check for a number
+	val, err := numToBinary(s)
+	if err != nil {
+		// Check if the symbol has a translation stored
+		v, ok := symb[s]
+		if ok == false {
+			// store the symbol for later translation
+			extra[s] = i
+			return s
+		}
+		v, err := numToBinary(v)
+		if err != nil {
+			// ???
+		}
+		val = v
+	}
+	return val
+}
+
+func numToBinary(s string) (string, error) {
 	n, err := strconv.ParseInt(s, 0, 16)
 	if err != nil {
-		return ""
+		return "", err
 	}
-	//convert the number to binary
-	return "0" + fmt.Sprintf("%015b", n)
+	return "0" + fmt.Sprintf("%015b", n), nil
 }
 
 // Parse C instruction using lookup tables
@@ -72,16 +127,4 @@ func parseCInstruction(s string) string {
 	}
 
 	return ins + comp + dest + jump
-}
-
-func removeComments(s string) string {
-	ind := strings.Index(s, "//")
-	if ind != -1 {
-		s = s[:ind]
-	}
-	return s
-}
-
-func removeWhitespace(s string) string {
-	return strings.TrimSpace(s)
 }
