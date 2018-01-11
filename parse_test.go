@@ -5,19 +5,26 @@ import (
 	"testing"
 )
 
-func TestParseSymbolInOrder(t *testing.T) {
+func TestParseLabelInOrder(t *testing.T) {
 	testCase := []string{"(symbol)", "@symbol"}
 	expected := []string{"0000000000000000"}
 
 	testParse(t, testCase, expected)
 }
 
-func TestParseSymbolReverseOrder(t *testing.T) {
+func TestParseLabelReverseOrder(t *testing.T) {
 	testCase := []string{"@symbol", "(symbol)", "@8"}
 	expected := []string{"0000000000000001", "0000000000001000"}
 
 	testParse(t, testCase, expected)
+}
 
+func TestParsePredefined(t *testing.T) {
+	// Limited examples - test lookup table with provided .asm files
+	testCase := []string{"@R2", "@KBD"}
+	expected := []string{"0000000000000010", "0110000000000000"}
+
+	testParse(t, testCase, expected)
 }
 
 func TestAinstructionNumbers(t *testing.T) {

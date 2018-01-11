@@ -73,23 +73,36 @@ func catalog(line string, i int) {
 func parseAInstruction(s string, i int) string {
 	//strip the @ prefix
 	s = s[1:]
+
 	// Check for a number
-	val, err := numToBinary(s)
-	if err != nil {
-		// Check if the symbol has a translation stored
-		v, ok := symb[s]
-		if ok == false {
-			// store the symbol for later translation
-			extra[s] = i
-			return s
-		}
-		v, err := numToBinary(v)
+	v, err := numToBinary(s)
+	if err == nil {
+		return v
+	}
+
+	// Check if the symbol is predefined
+	v = getSymbol(s)
+	if v != "" {
+		val, err := numToBinary(v)
 		if err != nil {
 			// ???
 		}
-		val = v
+		return val
 	}
-	return val
+
+	// Check if the symbol has a translation stored
+	v, ok := symb[s]
+	if ok == true {
+		val, err := numToBinary(v)
+		if err != nil {
+			// ???
+		}
+		return val
+	}
+
+	// store the symbol for later translation
+	extra[s] = i
+	return s
 }
 
 func numToBinary(s string) (string, error) {
