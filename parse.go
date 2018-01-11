@@ -7,7 +7,9 @@ import (
 )
 
 var symb = make(map[string]string)
-var extra = make(map[string]int)
+var extra = make(map[string][]int)
+var extraKeys = make([]string, 0)
+var varAddr = 16
 
 func parse(input []string) ([]string, error) {
 	var binary []string
@@ -25,14 +27,31 @@ func parse(input []string) ([]string, error) {
 		b := parseLine(line, len(binary))
 		binary = append(binary, b)
 	}
-	for key := range extra {
-		index := extra[key]
-		val := symb[key]
-		v, err := numToBinary(val)
-		if err != nil {
-			// how to handle this? can assume well-formed input for exercise
+	for _, key := range extraKeys {
+		indices := extra[key]
+		// Check for a label symbol
+		val, ok := symb[key]
+		if ok == true {
+			v, err := numToBinary(val)
+			if err != nil {
+				// how to handle this? can assume well-formed input for exercise
+			}
+			for _, index := range indices {
+				binary[index] = v
+			}
+			continue
 		}
-		binary[index] = v
+
+		// Assign a variable space
+		addr := strconv.Itoa(varAddr)
+		v, err := numToBinary(addr)
+		if err != nil {
+			// ??
+		}
+		for _, index := range indices {
+			binary[index] = v
+		}
+		varAddr++
 	}
 	return binary, nil
 }
@@ -74,7 +93,7 @@ func parseAInstruction(s string, i int) string {
 	//strip the @ prefix
 	s = s[1:]
 
-	// Check for a number
+	// Check for a numerical value
 	v, err := numToBinary(s)
 	if err == nil {
 		return v
@@ -90,7 +109,7 @@ func parseAInstruction(s string, i int) string {
 		return val
 	}
 
-	// Check if the symbol has a translation stored
+	// Check if the symbol has a translation stored (is a label symbol)
 	v, ok := symb[s]
 	if ok == true {
 		val, err := numToBinary(v)
@@ -101,10 +120,18 @@ func parseAInstruction(s string, i int) string {
 	}
 
 	// store the symbol for later translation
-	extra[s] = i
+	if extra[s] == nil {
+		extra[s] = make([]int, 0)
+	}
+	extra[s] = append(extra[s], i)
+	if !contains(extraKeys, s) {
+		extraKeys = append(extraKeys, s)
+	}
 	return s
 }
 
+// TODO make this take an int instead of a string and convert only
+// numbers read from the input file
 func numToBinary(s string) (string, error) {
 	n, err := strconv.ParseInt(s, 0, 16)
 	if err != nil {
@@ -140,4 +167,13 @@ func parseCInstruction(s string) string {
 	}
 
 	return ins + comp + dest + jump
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

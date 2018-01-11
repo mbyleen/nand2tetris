@@ -75,4 +75,5 @@ func clearMaps() {
 	for k := range extra {
 		delete(extra, k)
 	}
+	varAddr = 16
 }
