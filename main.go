@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func Main() {
+func main() {
 	app := cli.NewApp()
 	app.Name = "gha"
 	app.Usage = "Assemble HACK assembly language to machine code readable by the HACK computer"
