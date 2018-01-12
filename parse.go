@@ -6,31 +6,63 @@ import (
 	"strings"
 )
 
-var symb = make(map[string]string)
-var extra = make(map[string][]int)
-var extraKeys = make([]string, 0)
-var varAddr = 16
+type Parser struct {
+	labels    map[string]string
+	extra     map[string][]int
+	extraKeys []string
+	varAddr   int
+}
+
+func NewParser() *Parser {
+	return &Parser{
+		labels:    make(map[string]string),
+		extra:     make(map[string][]int),
+		extraKeys: make([]string, 0),
+		varAddr:   16,
+	}
+}
 
 func parse(input []string) ([]string, error) {
+
+	p := NewParser()
+
 	var binary []string
 	for _, line := range input {
-		line = removeComments(line)
-		line = removeWhitespace(line)
+
+		// remove comments and whitespace
+		line = delNonCode(line)
 		if line == "" {
 			continue
 		}
-		// identify symbols to catalog
+
+		// identify labels for later translation
 		if strings.HasPrefix(line, "(") && strings.HasSuffix(line, ")") {
-			catalog(line, len(binary))
+			p.catalog(line, len(binary))
 			continue
 		}
-		b := parseLine(line, len(binary))
+
+		// parse A and C instructions
+		var b string
+		if strings.HasPrefix(line, "@") {
+			b = p.parseAInstruction(line, len(binary))
+		} else {
+			b = parseCInstruction(line)
+		}
+
 		binary = append(binary, b)
 	}
-	for _, key := range extraKeys {
-		indices := extra[key]
+
+	// translate reserved variables and labels
+	binary = p.fillInVar(binary)
+
+	return binary, nil
+}
+
+func (p *Parser) fillInVar(binary []string) []string {
+	for _, key := range p.extraKeys {
+		indices := p.extra[key]
 		// Check for a label symbol
-		val, ok := symb[key]
+		val, ok := p.labels[key]
 		if ok == true {
 			v, err := numToBinary(val)
 			if err != nil {
@@ -43,7 +75,7 @@ func parse(input []string) ([]string, error) {
 		}
 
 		// Assign a variable space
-		addr := strconv.Itoa(varAddr)
+		addr := strconv.Itoa(p.varAddr)
 		v, err := numToBinary(addr)
 		if err != nil {
 			// ??
@@ -51,45 +83,21 @@ func parse(input []string) ([]string, error) {
 		for _, index := range indices {
 			binary[index] = v
 		}
-		varAddr++
+		p.varAddr++
 	}
-	return binary, nil
-}
-
-func parseLine(line string, i int) string {
-	var b string
-	// identify A instructions
-	if strings.HasPrefix(line, "@") {
-		b = parseAInstruction(line, i)
-	} else {
-		// Non-A instructions are C instructions
-		b = parseCInstruction(line)
-	}
-	return b
-}
-
-func removeComments(s string) string {
-	ind := strings.Index(s, "//")
-	if ind != -1 {
-		s = s[:ind]
-	}
-	return s
-}
-
-func removeWhitespace(s string) string {
-	return strings.TrimSpace(s)
+	return binary
 }
 
 // Store symbol values
-func catalog(line string, i int) {
+func (p *Parser) catalog(line string, i int) {
 	// strip parentheses
 	symbol := line[1 : len(line)-1]
 	// Address referred to by (symbol) is that of next line
-	symb[symbol] = strconv.Itoa(i)
+	p.labels[symbol] = strconv.Itoa(i)
 }
 
 // Parse an A instruction
-func parseAInstruction(s string, i int) string {
+func (p *Parser) parseAInstruction(s string, i int) string {
 	//strip the @ prefix
 	s = s[1:]
 
@@ -110,7 +118,7 @@ func parseAInstruction(s string, i int) string {
 	}
 
 	// Check if the symbol has a translation stored (is a label symbol)
-	v, ok := symb[s]
+	v, ok := p.labels[s]
 	if ok == true {
 		val, err := numToBinary(v)
 		if err != nil {
@@ -120,12 +128,12 @@ func parseAInstruction(s string, i int) string {
 	}
 
 	// store the symbol for later translation
-	if extra[s] == nil {
-		extra[s] = make([]int, 0)
+	if p.extra[s] == nil {
+		p.extra[s] = make([]int, 0)
 	}
-	extra[s] = append(extra[s], i)
-	if !contains(extraKeys, s) {
-		extraKeys = append(extraKeys, s)
+	p.extra[s] = append(p.extra[s], i)
+	if !contains(p.extraKeys, s) {
+		p.extraKeys = append(p.extraKeys, s)
 	}
 	return s
 }
@@ -167,6 +175,14 @@ func parseCInstruction(s string) string {
 	}
 
 	return ins + comp + dest + jump
+}
+
+func delNonCode(s string) string {
+	ind := strings.Index(s, "//")
+	if ind != -1 {
+		s = s[:ind]
+	}
+	return strings.TrimSpace(s)
 }
 
 func contains(s []string, e string) bool {

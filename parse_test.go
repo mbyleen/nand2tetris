@@ -43,12 +43,12 @@ func TestCinstruction(t *testing.T) {
 	testParse(t, testCases, expected)
 }
 
-func TestRemoveComments(t *testing.T) {
+func TestRemoveNonCode(t *testing.T) {
 	testCases := []string{"// This is a comment", "A=D+1 // This is an inline comment"}
-	expected := []string{"", "A=D+1 "}
+	expected := []string{"", "A=D+1"}
 
 	for i, line := range testCases {
-		output := removeComments(line)
+		output := delNonCode(line)
 		if strings.Compare(expected[i], output) != 0 {
 			t.Error("Match failed:", output, expected[i])
 		}
@@ -65,15 +65,4 @@ func testParse(t *testing.T, testCases []string, expected []string) {
 			t.Error("Match failed:", output[i], expected[i])
 		}
 	}
-	clearMaps()
-}
-
-func clearMaps() {
-	for k := range symb {
-		delete(symb, k)
-	}
-	for k := range extra {
-		delete(extra, k)
-	}
-	varAddr = 16
 }
