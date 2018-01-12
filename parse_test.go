@@ -65,15 +65,4 @@ func testParse(t *testing.T, testCases []string, expected []string) {
 			t.Error("Match failed:", output[i], expected[i])
 		}
 	}
-	clearMaps()
-}
-
-func clearMaps() {
-	for k := range symb {
-		delete(symb, k)
-	}
-	for k := range extra {
-		delete(extra, k)
-	}
-	varAddr = 16
 }

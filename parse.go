@@ -6,31 +6,44 @@ import (
 	"strings"
 )
 
-var symb = make(map[string]string)
-var extra = make(map[string][]int)
-var extraKeys = make([]string, 0)
-var varAddr = 16
-
 func parse(input []string) ([]string, error) {
+
+	var labels = make(map[string]string)
+	var extra = make(map[string][]int)
+	var extraKeys = make([]string, 0)
+	var varAddr = 16
+
 	var binary []string
 	for _, line := range input {
+
 		line = removeComments(line)
 		line = removeWhitespace(line)
 		if line == "" {
 			continue
 		}
+
 		// identify symbols to catalog
 		if strings.HasPrefix(line, "(") && strings.HasSuffix(line, ")") {
-			catalog(line, len(binary))
+			labels = catalog(line, len(binary), labels)
 			continue
 		}
-		b := parseLine(line, len(binary))
+
+		// parse A and C instructions
+		var b string
+		// identify A instructions
+		if strings.HasPrefix(line, "@") {
+			extra, extraKeys, b = parseAInstruction(line, len(binary), labels, extra, extraKeys)
+		} else {
+			// Non-A instructions are C instructions
+			b = parseCInstruction(line)
+		}
 		binary = append(binary, b)
 	}
+
 	for _, key := range extraKeys {
 		indices := extra[key]
 		// Check for a label symbol
-		val, ok := symb[key]
+		val, ok := labels[key]
 		if ok == true {
 			v, err := numToBinary(val)
 			if err != nil {
@@ -56,18 +69,6 @@ func parse(input []string) ([]string, error) {
 	return binary, nil
 }
 
-func parseLine(line string, i int) string {
-	var b string
-	// identify A instructions
-	if strings.HasPrefix(line, "@") {
-		b = parseAInstruction(line, i)
-	} else {
-		// Non-A instructions are C instructions
-		b = parseCInstruction(line)
-	}
-	return b
-}
-
 func removeComments(s string) string {
 	ind := strings.Index(s, "//")
 	if ind != -1 {
@@ -81,22 +82,23 @@ func removeWhitespace(s string) string {
 }
 
 // Store symbol values
-func catalog(line string, i int) {
+func catalog(line string, i int, labels map[string]string) map[string]string {
 	// strip parentheses
 	symbol := line[1 : len(line)-1]
 	// Address referred to by (symbol) is that of next line
-	symb[symbol] = strconv.Itoa(i)
+	labels[symbol] = strconv.Itoa(i)
+	return labels
 }
 
 // Parse an A instruction
-func parseAInstruction(s string, i int) string {
+func parseAInstruction(s string, i int, labels map[string]string, extra map[string][]int, extraKeys []string) (map[string][]int, []string, string) {
 	//strip the @ prefix
 	s = s[1:]
 
 	// Check for a numerical value
 	v, err := numToBinary(s)
 	if err == nil {
-		return v
+		return extra, extraKeys, v
 	}
 
 	// Check if the symbol is predefined
@@ -106,17 +108,17 @@ func parseAInstruction(s string, i int) string {
 		if err != nil {
 			// ???
 		}
-		return val
+		return extra, extraKeys, val
 	}
 
 	// Check if the symbol has a translation stored (is a label symbol)
-	v, ok := symb[s]
+	v, ok := labels[s]
 	if ok == true {
 		val, err := numToBinary(v)
 		if err != nil {
 			// ???
 		}
-		return val
+		return extra, extraKeys, val
 	}
 
 	// store the symbol for later translation
@@ -127,7 +129,7 @@ func parseAInstruction(s string, i int) string {
 	if !contains(extraKeys, s) {
 		extraKeys = append(extraKeys, s)
 	}
-	return s
+	return extra, extraKeys, s
 }
 
 // TODO make this take an int instead of a string and convert only
