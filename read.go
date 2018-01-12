@@ -2,15 +2,10 @@ package main
 
 import (
 	"bufio"
-	"errors"
 	"os"
-	"strings"
 )
 
 func read(filename string) ([]string, error) {
-	if strings.TrimSuffix(filename, ".asm") == filename {
-		return nil, errors.New("read: given file lacks .asm filetype")
-	}
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, err

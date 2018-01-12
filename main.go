@@ -1,9 +1,11 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/urfave/cli"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -12,6 +14,9 @@ func main() {
 	app.Usage = "Assemble HACK assembly language to machine code readable by the HACK computer"
 	app.Action = func(c *cli.Context) error {
 		filename := c.Args().Get(0)
+		if strings.TrimSuffix(filename, ".asm") == filename {
+			return errors.New("read: given file lacks .asm filetype")
+		}
 		input, err := read(filename)
 		if err != nil {
 			fmt.Println(err)
