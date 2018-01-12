@@ -6,44 +6,63 @@ import (
 	"strings"
 )
 
+type Parser struct {
+	labels    map[string]string
+	extra     map[string][]int
+	extraKeys []string
+	varAddr   int
+}
+
+func NewParser() *Parser {
+	return &Parser{
+		labels:    make(map[string]string),
+		extra:     make(map[string][]int),
+		extraKeys: make([]string, 0),
+		varAddr:   16,
+	}
+}
+
 func parse(input []string) ([]string, error) {
 
-	var labels = make(map[string]string)
-	var extra = make(map[string][]int)
-	var extraKeys = make([]string, 0)
-	var varAddr = 16
+	p := NewParser()
 
 	var binary []string
 	for _, line := range input {
 
-		line = removeComments(line)
-		line = removeWhitespace(line)
+		// remove comments and whitespace
+		line = delNonCode(line)
 		if line == "" {
 			continue
 		}
 
-		// identify symbols to catalog
+		// identify labels for later translation
 		if strings.HasPrefix(line, "(") && strings.HasSuffix(line, ")") {
-			labels = catalog(line, len(binary), labels)
+			p.catalog(line, len(binary))
 			continue
 		}
 
 		// parse A and C instructions
 		var b string
-		// identify A instructions
 		if strings.HasPrefix(line, "@") {
-			extra, extraKeys, b = parseAInstruction(line, len(binary), labels, extra, extraKeys)
+			b = p.parseAInstruction(line, len(binary))
 		} else {
-			// Non-A instructions are C instructions
 			b = parseCInstruction(line)
 		}
+
 		binary = append(binary, b)
 	}
 
-	for _, key := range extraKeys {
-		indices := extra[key]
+	// translate reserved variables and labels
+	binary = p.fillInVar(binary)
+
+	return binary, nil
+}
+
+func (p *Parser) fillInVar(binary []string) []string {
+	for _, key := range p.extraKeys {
+		indices := p.extra[key]
 		// Check for a label symbol
-		val, ok := labels[key]
+		val, ok := p.labels[key]
 		if ok == true {
 			v, err := numToBinary(val)
 			if err != nil {
@@ -56,7 +75,7 @@ func parse(input []string) ([]string, error) {
 		}
 
 		// Assign a variable space
-		addr := strconv.Itoa(varAddr)
+		addr := strconv.Itoa(p.varAddr)
 		v, err := numToBinary(addr)
 		if err != nil {
 			// ??
@@ -64,41 +83,28 @@ func parse(input []string) ([]string, error) {
 		for _, index := range indices {
 			binary[index] = v
 		}
-		varAddr++
+		p.varAddr++
 	}
-	return binary, nil
-}
-
-func removeComments(s string) string {
-	ind := strings.Index(s, "//")
-	if ind != -1 {
-		s = s[:ind]
-	}
-	return s
-}
-
-func removeWhitespace(s string) string {
-	return strings.TrimSpace(s)
+	return binary
 }
 
 // Store symbol values
-func catalog(line string, i int, labels map[string]string) map[string]string {
+func (p *Parser) catalog(line string, i int) {
 	// strip parentheses
 	symbol := line[1 : len(line)-1]
 	// Address referred to by (symbol) is that of next line
-	labels[symbol] = strconv.Itoa(i)
-	return labels
+	p.labels[symbol] = strconv.Itoa(i)
 }
 
 // Parse an A instruction
-func parseAInstruction(s string, i int, labels map[string]string, extra map[string][]int, extraKeys []string) (map[string][]int, []string, string) {
+func (p *Parser) parseAInstruction(s string, i int) string {
 	//strip the @ prefix
 	s = s[1:]
 
 	// Check for a numerical value
 	v, err := numToBinary(s)
 	if err == nil {
-		return extra, extraKeys, v
+		return v
 	}
 
 	// Check if the symbol is predefined
@@ -108,28 +114,28 @@ func parseAInstruction(s string, i int, labels map[string]string, extra map[stri
 		if err != nil {
 			// ???
 		}
-		return extra, extraKeys, val
+		return val
 	}
 
 	// Check if the symbol has a translation stored (is a label symbol)
-	v, ok := labels[s]
+	v, ok := p.labels[s]
 	if ok == true {
 		val, err := numToBinary(v)
 		if err != nil {
 			// ???
 		}
-		return extra, extraKeys, val
+		return val
 	}
 
 	// store the symbol for later translation
-	if extra[s] == nil {
-		extra[s] = make([]int, 0)
+	if p.extra[s] == nil {
+		p.extra[s] = make([]int, 0)
 	}
-	extra[s] = append(extra[s], i)
-	if !contains(extraKeys, s) {
-		extraKeys = append(extraKeys, s)
+	p.extra[s] = append(p.extra[s], i)
+	if !contains(p.extraKeys, s) {
+		p.extraKeys = append(p.extraKeys, s)
 	}
-	return extra, extraKeys, s
+	return s
 }
 
 // TODO make this take an int instead of a string and convert only
@@ -169,6 +175,14 @@ func parseCInstruction(s string) string {
 	}
 
 	return ins + comp + dest + jump
+}
+
+func delNonCode(s string) string {
+	ind := strings.Index(s, "//")
+	if ind != -1 {
+		s = s[:ind]
+	}
+	return strings.TrimSpace(s)
 }
 
 func contains(s []string, e string) bool {
