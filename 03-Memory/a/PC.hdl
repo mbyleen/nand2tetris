@@ -16,8 +16,9 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    Mux4Way16(a=FEEDBACK, b=in, c=false, d=false, sel[0]=reset, sel[1]=load, out=INPUT);
+    Mux16(a=FEEDBACK, b=in, sel=load, out=NUM);
+    Mux16(a=NUM, b=false, sel=reset, out=INPUT);
     Register(in=INPUT, load=true, out=REG);
     Inc16(in=REG, out=INC);
-    Mux16(a=REG, b=INC, out=FEEDBACK, out=out);
+    Mux16(a=REG, b=INC, sel=inc, out=FEEDBACK, out=out);
 }

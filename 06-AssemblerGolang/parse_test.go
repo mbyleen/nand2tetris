@@ -56,10 +56,7 @@ func TestRemoveNonCode(t *testing.T) {
 }
 
 func testParse(t *testing.T, testCases []string, expected []string) {
-	output, err := parse(testCases)
-	if err != nil {
-		t.Error()
-	}
+	output := parse(testCases)
 	for i, _ := range expected {
 		if strings.Compare(expected[i], output[i]) != 0 {
 			t.Error("Match failed:", output[i], expected[i])

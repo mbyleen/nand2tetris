@@ -53,10 +53,7 @@ func testFromFile(t *testing.T, filename string, compareFile string) {
 		t.Error("type: %T; value: %q\n", err, err)
 	}
 
-	output, err := parse(code)
-	if err != nil {
-		t.Error("Parsing error")
-	}
+	output := parse(code)
 
 	compare, err := read(compareFile)
 	if err != nil {

@@ -1,7 +1,6 @@
 package main
 
-func getComp(input string) string {
-	m := map[string]string{
+var comp = map[string]string{
 		"0":   "0101010",
 		"1":   "0111111",
 		"-1":  "0111010",
@@ -30,12 +29,9 @@ func getComp(input string) string {
 		"D&M": "1000000",
 		"D|A": "0010101",
 		"D|M": "1010101",
-	}
-	return m[input]
-}
+    }
 
-func getDest(input string) string {
-	m := map[string]string{
+	var dest = map[string]string{
 		"null": "000",
 		"M":    "001",
 		"D":    "010",
@@ -45,11 +41,8 @@ func getDest(input string) string {
 		"AD":   "110",
 		"AMD":  "111",
 	}
-	return m[input]
-}
 
-func getJump(input string) string {
-	m := map[string]string{
+	var jump = map[string]string{
 		"null": "000",
 		"JGT":  "001",
 		"JEQ":  "010",
@@ -59,11 +52,8 @@ func getJump(input string) string {
 		"JLE":  "110",
 		"JMP":  "111",
 	}
-	return m[input]
-}
 
-func getSymbol(input string) string {
-	m := map[string]string{
+	var symbol = map[string]string{
 		"R0":     "0",
 		"R1":     "1",
 		"R2":     "2",
@@ -88,5 +78,19 @@ func getSymbol(input string) string {
 		"THIS":   "3",
 		"THAT":   "4",
 	}
-	return m[input]
+
+func lookupComp(input string) string {
+    return comp[input]
+}
+
+func lookupDest(input string) string {
+	return dest[input]
+}
+
+func lookupJump(input string) string {
+	return jump[input]
+}
+
+func lookupSymbol(input string) string {
+	return symbol[input]
 }

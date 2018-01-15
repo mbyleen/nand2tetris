@@ -22,7 +22,7 @@ func NewParser() *Parser {
 	}
 }
 
-func parse(input []string) ([]string, error) {
+func parse(input []string) []string {
 
 	p := NewParser()
 
@@ -55,45 +55,7 @@ func parse(input []string) ([]string, error) {
 	// translate reserved variables and labels
 	binary = p.fillInVar(binary)
 
-	return binary, nil
-}
-
-func (p *Parser) fillInVar(binary []string) []string {
-	for _, key := range p.extraKeys {
-		indices := p.extra[key]
-		// Check for a label symbol
-		val, ok := p.labels[key]
-		if ok == true {
-			v, err := numToBinary(val)
-			if err != nil {
-				// how to handle this? can assume well-formed input for exercise
-			}
-			for _, index := range indices {
-				binary[index] = v
-			}
-			continue
-		}
-
-		// Assign a variable space
-		addr := strconv.Itoa(p.varAddr)
-		v, err := numToBinary(addr)
-		if err != nil {
-			// ??
-		}
-		for _, index := range indices {
-			binary[index] = v
-		}
-		p.varAddr++
-	}
 	return binary
-}
-
-// Store symbol values
-func (p *Parser) catalog(line string, i int) {
-	// strip parentheses
-	symbol := line[1 : len(line)-1]
-	// Address referred to by (symbol) is that of next line
-	p.labels[symbol] = strconv.Itoa(i)
 }
 
 // Parse an A instruction
@@ -102,28 +64,22 @@ func (p *Parser) parseAInstruction(s string, i int) string {
 	s = s[1:]
 
 	// Check for a numerical value
-	v, err := numToBinary(s)
+	v, err := toBinary(s)
 	if err == nil {
 		return v
 	}
 
 	// Check if the symbol is predefined
-	v = getSymbol(s)
+	v = lookupSymbol(s)
 	if v != "" {
-		val, err := numToBinary(v)
-		if err != nil {
-			// ???
-		}
+		val, _ := toBinary(v)
 		return val
 	}
 
 	// Check if the symbol has a translation stored (is a label symbol)
 	v, ok := p.labels[s]
 	if ok == true {
-		val, err := numToBinary(v)
-		if err != nil {
-			// ???
-		}
+		val, _ := toBinary(v)
 		return val
 	}
 
@@ -138,16 +94,6 @@ func (p *Parser) parseAInstruction(s string, i int) string {
 	return s
 }
 
-// TODO make this take an int instead of a string and convert only
-// numbers read from the input file
-func numToBinary(s string) (string, error) {
-	n, err := strconv.ParseInt(s, 0, 16)
-	if err != nil {
-		return "", err
-	}
-	return "0" + fmt.Sprintf("%015b", n), nil
-}
-
 // Parse C instruction using lookup tables
 // 1 1 1 a c1 c2 c3 c4 c5 c6 d1 d2 d3 j1 j2 j3
 // dest=comp;jump
@@ -159,22 +105,56 @@ func parseCInstruction(s string) string {
 
 	first := strings.Split(s, "=")
 	if len(first) > 1 {
-		dest = getDest(first[0])
+		dest = lookupDest(first[0])
 		ind := strings.Index(s, "=")
 		s = s[ind+1:]
 	} else {
-		dest = getDest("null")
+		dest = lookupDest("null")
 	}
 
 	second := strings.Split(s, ";")
-	comp = getComp(second[0])
+	comp = lookupComp(second[0])
 	if len(second) > 1 {
-		jump = getJump(second[1])
+		jump = lookupJump(second[1])
 	} else {
-		jump = getJump("null")
+		jump = lookupJump("null")
 	}
 
 	return ins + comp + dest + jump
+}
+
+// Resolve reserved symbol translation
+func (p *Parser) fillInVar(binary []string) []string {
+
+	for _, key := range p.extraKeys {
+		indices := p.extra[key]
+
+		// Check for a label symbol
+		val, ok := p.labels[key]
+		if ok == true {
+			v, _ := toBinary(val)
+			for _, index := range indices {
+				binary[index] = v
+			}
+			continue
+		}
+
+		// Assign a variable space
+		addr := strconv.Itoa(p.varAddr)
+		v, _ := toBinary(addr)
+		for _, index := range indices {
+			binary[index] = v
+		}
+		p.varAddr++
+	}
+
+	return binary
+}
+
+// Store symbol values
+func (p *Parser) catalog(line string, i int) {
+	symbol := line[1 : len(line)-1]
+	p.labels[symbol] = strconv.Itoa(i)
 }
 
 func delNonCode(s string) string {
@@ -183,6 +163,14 @@ func delNonCode(s string) string {
 		s = s[:ind]
 	}
 	return strings.TrimSpace(s)
+}
+
+func toBinary(s string) (string, error) {
+	n, err := strconv.ParseInt(s, 0, 16)
+	if err != nil {
+		return "", err
+	}
+	return "0" + fmt.Sprintf("%015b", n), nil
 }
 
 func contains(s []string, e string) bool {
